@@ -17,7 +17,7 @@ func main() {
 	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
 	defer rabbitMQ.Close()
 
-	msgs, err := rabbitMQ.Channel.Consume(rabbitMQ.Queue.Name, "", true, false, false, false, nil)
+	msgs, err := rabbitMQ.Consume()
 	errors.HandleErrorWithMessage(err, "could not consume messages")
 
 	var forever chan struct{}
