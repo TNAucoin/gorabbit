@@ -1,17 +1,17 @@
-package main
+package sender
 
 import (
 	"github.com/tnaucoin/gorabbit/internal/data"
+	"github.com/tnaucoin/gorabbit/internal/errors"
+	"github.com/tnaucoin/gorabbit/pkg/rmq"
 	"log"
 	"time"
 )
 
 func main() {
 	// ...
-	rabbitMQ, err := NewRabbitMQ()
-	if err != nil {
-		log.Fatalf("could not create rabbitmq: %v", err)
-	}
+	rabbitMQ, err := rmq.NewRabbitMQ()
+	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
 	defer rabbitMQ.Close()
 	go func() {
 		for i := 0; i < 10; i++ {
