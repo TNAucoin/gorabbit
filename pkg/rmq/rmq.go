@@ -38,8 +38,7 @@ func NewRabbitMQ() (*RabbitMQ, error) {
 }
 
 // Publish publishes a message to the queue
-func (rmq *RabbitMQ) Publish(data data.MyData) error {
-	ctx := context.Background()
+func (rmq *RabbitMQ) Publish(ctx context.Context, data data.MyData) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err

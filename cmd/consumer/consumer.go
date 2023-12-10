@@ -7,20 +7,17 @@ import (
 	"log"
 )
 
+// main is the entry point of the program.
+// It creates a new RabbitMQ instance and consumes messages from it.
+// If any error occurs during the process, it will be handled.
+// The function runs an infinite loop to continuously receive messages from the channel.
+// It prints the received message and waits for more messages.
 func main() {
 	rabbitMQ, err := rmq.NewRabbitMQ()
 	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
 	defer rabbitMQ.Close()
-	q, err := rabbitMQ.Channel.QueueDeclare(
-		"gorabbit",
-		false, //durable
-		false, //delete when unused
-		false, //exclusive
-		false, //no-wait
-		nil,   //arguments
-	)
-	errors.HandleErrorWithMessage(err, "could not declare queue")
-	msgs, err := rabbitMQ.Channel.Consume(q.Name, "", true, false, false, false, nil)
+
+	msgs, err := rabbitMQ.Channel.Consume(rabbitMQ.Queue.Name, "", true, false, false, false, nil)
 	errors.HandleErrorWithMessage(err, "could not consume messages")
 
 	var forever chan struct{}

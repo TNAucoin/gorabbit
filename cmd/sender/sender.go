@@ -1,25 +1,36 @@
-package sender
+package main
 
 import (
+	"context"
 	"github.com/tnaucoin/gorabbit/internal/data"
 	"github.com/tnaucoin/gorabbit/internal/errors"
 	"github.com/tnaucoin/gorabbit/pkg/rmq"
 	"log"
+	"sync"
 	"time"
 )
 
+// main is the entry point of the application.
+// It creates a new RabbitMQ instance, initializes a WaitGroup for concurrency management,
+// and starts a goroutine to publish messages to RabbitMQ.
+// After the goroutine finishes, it waits for all goroutines to complete using the WaitGroup.
+// Finally, it closes the RabbitMQ connection.
 func main() {
 	// ...
 	rabbitMQ, err := rmq.NewRabbitMQ()
 	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
-	defer rabbitMQ.Close()
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 		for i := 0; i < 10; i++ {
 			data := data.MyData{
 				Message: "Hello World",
 				Number:  i + 1,
 			}
-			err := rabbitMQ.Publish(data)
+			err := rabbitMQ.Publish(ctx, data)
 			if err != nil {
 				log.Fatalf("could not publish message: %v", err)
 			} else {
@@ -28,13 +39,6 @@ func main() {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-
-	msgs, err := rabbitMQ.Consume()
-	if err != nil {
-		log.Fatalf("could not consume messages: %v", err)
-	}
-	for msg := range msgs {
-		log.Printf("received message: %s", msg.Body)
-		msg.Ack(false)
-	}
+	wg.Wait()
+	defer rabbitMQ.Close()
 }
