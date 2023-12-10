@@ -1,0 +1,2 @@
+# gorabbit
+Go and RabbitMQ
