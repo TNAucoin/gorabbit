@@ -9,10 +9,13 @@ around working with producers, consumers, and queues in RabbitMQ.
 #### Producer / Consumer
 
 ```mermaid
-%%{init: {"flowchart": {"htmlLabels": false}} }%%
 graph LR;
-    producer("`**Sender.go**`")
-    queue["`_gorabbit_ Queue`"]
-    consumer("`**Consumer.go**`")
+    producer((("Sender.go**")))
+    queue["gorabbit Queue"]
+    consumer((("Consumer.go")))
     producer --> queue --> consumer
 ```
+
+The `sender.go` program is a simple producer, that sends messages to the queue named "gorabbit". 
+The `consumer.go` is a simple consumer that will continually attempt to read any messages waiting in the
+queue "gorabbit".
