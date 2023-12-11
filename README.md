@@ -10,7 +10,7 @@ around working with producers, consumers, and queues in RabbitMQ.
 
 ```mermaid
 graph LR;
-    producer((("Sender.go**")))
+    producer((("Sender.go")))
     queue["gorabbit Queue"]
     consumer((("Consumer.go")))
     producer --> queue --> consumer
@@ -19,3 +19,17 @@ graph LR;
 The `sender.go` program is a simple producer, that sends messages to the queue named "gorabbit". 
 The `consumer.go` is a simple consumer that will continually attempt to read any messages waiting in the
 queue "gorabbit".
+
+#### Task / Worker
+
+```mermaid
+graph LR;
+    task((("Task.go")))
+    queue["task Queue"]
+    worker((("Worker.go" A)))
+    worker2((("Worker.go" B)))
+    task --> queue
+    queue --> worker
+    queue --> worker2
+    
+```
