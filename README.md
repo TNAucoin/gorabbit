@@ -9,9 +9,10 @@ around working with producers, consumers, and queues in RabbitMQ.
 #### Producer / Consumer
 
 ```mermaid
+%%{init: {"flowchart": {"htmlLabels": false}} }%%
 graph LR;
-    producer["`**Sender.go**`"]
+    producer("`**Sender.go**`")
     queue["`_gorabbit_ Queue`"]
-    consumer["`**Consumer.go**`"]
+    consumer("`**Consumer.go**`")
     producer --> queue --> consumer
 ```
