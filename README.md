@@ -33,3 +33,14 @@ graph LR;
     queue --> worker2
     
 ```
+
+The `task.go` program takes an argument where any `N` number of `.` represents work in terms of seconds
+in which the receiving worker node will wait:
+
+`go run cmd/task/task.go work...`
+
+This will result in the consuming worker node to sleep for 3 seconds, upon receiving this message.
+
+Not much has changed from the original consumer in the first examples. The only addition for the
+`worker.go` is that we parse the number of '.' within the message to determine how long it should
+wait.
