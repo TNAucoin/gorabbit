@@ -17,7 +17,7 @@ import (
 // Finally, it closes the RabbitMQ connection.
 func main() {
 	// ...
-	rabbitMQ, err := rmq.NewRabbitMQ()
+	rabbitMQ, err := rmq.NewRabbitMQ("gorabbit", false)
 	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -30,7 +30,7 @@ func main() {
 				Message: "Hello World",
 				Number:  i + 1,
 			}
-			err := rabbitMQ.Publish(ctx, data)
+			err := rabbitMQ.PublishJSON(ctx, data)
 			if err != nil {
 				log.Fatalf("could not publish message: %v", err)
 			} else {

@@ -13,7 +13,7 @@ import (
 // The function runs an infinite loop to continuously receive messages from the channel.
 // It prints the received message and waits for more messages.
 func main() {
-	rabbitMQ, err := rmq.NewRabbitMQ()
+	rabbitMQ, err := rmq.NewRabbitMQ("gorabbit", false)
 	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
 	defer rabbitMQ.Close()
 

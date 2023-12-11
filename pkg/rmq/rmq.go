@@ -13,7 +13,7 @@ type RabbitMQ struct {
 	Queue      amqp.Queue
 }
 
-func NewRabbitMQ() (*RabbitMQ, error) {
+func NewRabbitMQ(qName string, durable bool) (*RabbitMQ, error) {
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
 		return nil, err
@@ -24,12 +24,12 @@ func NewRabbitMQ() (*RabbitMQ, error) {
 	}
 
 	q, err := ch.QueueDeclare(
-		"gorabbit",
-		false, //durable
-		false, //delete when unused
-		false, //exclusive
-		false, //no-wait
-		nil,   //arguments
+		qName,
+		durable, //durable
+		false,   //delete when unused
+		false,   //exclusive
+		false,   //no-wait
+		nil,     //arguments
 	)
 	if err != nil {
 		return nil, err
@@ -37,8 +37,8 @@ func NewRabbitMQ() (*RabbitMQ, error) {
 	return &RabbitMQ{Connection: conn, Channel: ch, Queue: q}, nil
 }
 
-// Publish publishes a message to the queue
-func (rmq *RabbitMQ) Publish(ctx context.Context, data data.MyData) error {
+// PublishJSON publishes a message to the queue
+func (rmq *RabbitMQ) PublishJSON(ctx context.Context, data data.MyData) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return err
@@ -46,6 +46,15 @@ func (rmq *RabbitMQ) Publish(ctx context.Context, data data.MyData) error {
 	err = rmq.Channel.PublishWithContext(ctx, "", rmq.Queue.Name, false, false, amqp.Publishing{
 		ContentType: "application/json",
 		Body:        jsonData,
+	})
+	return err
+}
+
+func (rmq *RabbitMQ) PublishString(ctx context.Context, data []byte) error {
+	err := rmq.Channel.PublishWithContext(ctx, "", rmq.Queue.Name, false, false, amqp.Publishing{
+		DeliveryMode: amqp.Persistent,
+		ContentType:  "text/plain",
+		Body:         []byte(data),
 	})
 	return err
 }
