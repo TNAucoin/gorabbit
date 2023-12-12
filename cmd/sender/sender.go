@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"github.com/tnaucoin/gorabbit/internal/errors"
 	"github.com/tnaucoin/gorabbit/pkg/rmq"
 	"time"
@@ -29,7 +31,15 @@ func main() {
 	if err = client.CreateBinding("gorabbit", "gorabbit.created.*", "gorabbit"); err != nil {
 		errors.HandleErrorWithMessage(err, "could not create binding")
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+	if err = client.Send(ctx, "gorabbit", "gorabbit.created.us", amqp.Publishing{
+		ContentType:  "text/plain",
+		DeliveryMode: amqp.Persistent,
+		Body:         []byte("Some really cool message."),
+	}); err != nil {
+		errors.HandleErrorWithMessage(err, "could not send message")
+	}
 	time.Sleep(time.Second * 10)
 	fmt.Println(client)
 }

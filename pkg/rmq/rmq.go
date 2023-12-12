@@ -66,6 +66,10 @@ func (rc *RabbitClient) Send(ctx context.Context, exchange, routingKey string, o
 	return rc.Channel.PublishWithContext(ctx, exchange, routingKey, true, false, options)
 }
 
+func (rc *RabbitClient) Consume(queue, consumer string, autoAck bool) (<-chan amqp.Delivery, error) {
+	return rc.Channel.Consume(queue, consumer, autoAck, false, false, false, nil)
+}
+
 func (rmq *RabbitClient) Close() {
 	_ = rmq.Channel.Close()
 }

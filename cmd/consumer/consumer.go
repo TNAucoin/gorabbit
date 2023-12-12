@@ -13,17 +13,19 @@ import (
 // The function runs an infinite loop to continuously receive messages from the channel.
 // It prints the received message and waits for more messages.
 func main() {
-	rabbitMQ, err := rmq.NewRabbitMQ("gorabbit", false)
-	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
-	defer rabbitMQ.Close()
-
-	msgs, err := rabbitMQ.Consume()
+	conn, err := rmq.NewRabbitMQConnection("guest", "guest", "localhost:5672", "gorabbit")
+	errors.HandleErrorWithMessage(err, "could not create rabbitmq connection")
+	client, err := rmq.NewRabbitMQClient(conn)
+	errors.HandleErrorWithMessage(err, "could not create rabbitmq client")
+	msgBus, err := client.Consume("gorabbit", "gorabbit_consumer", false)
 	errors.HandleErrorWithMessage(err, "could not consume messages")
 
 	var forever chan struct{}
+
 	go func() {
-		for msg := range msgs {
+		for msg := range msgBus {
 			log.Printf("received message: %s", msg.Body)
+			msg.Ack(false)
 		}
 	}()
 	fmt.Printf(" [*] Waiting for messages. To exit press CTRL+C\n")
