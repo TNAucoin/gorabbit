@@ -33,13 +33,14 @@ func main() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
-	if err = client.Send(ctx, "gorabbit", "gorabbit.created.us", amqp.Publishing{
-		ContentType:  "text/plain",
-		DeliveryMode: amqp.Persistent,
-		Body:         []byte("Some really cool message."),
-	}); err != nil {
-		errors.HandleErrorWithMessage(err, "could not send message")
+	for i := 0; i < 15; i++ {
+		if err = client.Send(ctx, "gorabbit", "gorabbit.created.us", amqp.Publishing{
+			ContentType:  "text/plain",
+			DeliveryMode: amqp.Persistent,
+			Body:         []byte(fmt.Sprintf("message %d", i)),
+		}); err != nil {
+			errors.HandleErrorWithMessage(err, "could not send message")
+		}
 	}
 	time.Sleep(time.Second * 10)
-	fmt.Println(client)
 }

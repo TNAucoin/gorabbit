@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
+	"log"
 )
 
 type RabbitClient struct {
@@ -31,7 +32,10 @@ func NewRabbitMQConnection(username, password, host, vhost string) (*amqp.Connec
 func NewRabbitMQClient(conn *amqp.Connection) (*RabbitClient, error) {
 	ch, err := conn.Channel()
 	if err != nil {
-		return nil, err
+		return &RabbitClient{}, err
+	}
+	if err = ch.Confirm(false); err != nil {
+		return &RabbitClient{}, err
 	}
 	return &RabbitClient{
 		Connection: conn,
@@ -63,7 +67,19 @@ func (rc *RabbitClient) CreateBinding(name, binding, exchange string) error {
 // Send sends a message to the queue
 func (rc *RabbitClient) Send(ctx context.Context, exchange, routingKey string, options amqp.Publishing) error {
 	// Set manditory to true to return message if no queue is bound to the exchange
-	return rc.Channel.PublishWithContext(ctx, exchange, routingKey, true, false, options)
+	confirmation, err := rc.Channel.PublishWithDeferredConfirmWithContext(
+		ctx,
+		exchange,
+		routingKey,
+		true,
+		false,
+		options,
+	)
+	if err != nil {
+		return err
+	}
+	log.Println(confirmation.Wait())
+	return nil
 }
 
 func (rc *RabbitClient) Consume(queue, consumer string, autoAck bool) (<-chan amqp.Delivery, error) {
