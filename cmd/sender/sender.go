@@ -1,12 +1,9 @@
 package main
 
 import (
-	"context"
-	"github.com/tnaucoin/gorabbit/internal/data"
+	"fmt"
 	"github.com/tnaucoin/gorabbit/internal/errors"
 	"github.com/tnaucoin/gorabbit/pkg/rmq"
-	"log"
-	"sync"
 	"time"
 )
 
@@ -17,28 +14,22 @@ import (
 // Finally, it closes the RabbitMQ connection.
 func main() {
 	// ...
-	rabbitMQ, err := rmq.NewRabbitMQ("gorabbit", false)
-	errors.HandleErrorWithMessage(err, "could not create rabbitmq")
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		for i := 0; i < 10; i++ {
-			data := data.MyData{
-				Message: "Hello World",
-				Number:  i + 1,
-			}
-			err := rabbitMQ.PublishJSON(ctx, data)
-			if err != nil {
-				log.Fatalf("could not publish message: %v", err)
-			} else {
-				log.Printf("published message: %v", data)
-			}
-			time.Sleep(1 * time.Second)
-		}
-	}()
-	wg.Wait()
-	defer rabbitMQ.Close()
+	conn, err := rmq.NewRabbitMQConnection("guest", "guest", "localhost:5672", "gorabbit")
+	errors.HandleErrorWithMessage(err, "could not create rabbitmq connection")
+	defer conn.Close()
+	client, err := rmq.NewRabbitMQClient(conn)
+	errors.HandleErrorWithMessage(err, "could not create rabbitmq client")
+	defer client.Close()
+
+	//Create Queue
+	if err = client.QueueDeclare("gorabbit", true, false); err != nil {
+		errors.HandleErrorWithMessage(err, "could not create queue")
+	}
+
+	if err = client.CreateBinding("gorabbit", "gorabbit.created.*", "gorabbit"); err != nil {
+		errors.HandleErrorWithMessage(err, "could not create binding")
+	}
+
+	time.Sleep(time.Second * 10)
+	fmt.Println(client)
 }

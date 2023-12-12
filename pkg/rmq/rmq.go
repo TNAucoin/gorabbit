@@ -2,68 +2,70 @@ package rmq
 
 import (
 	"context"
-	"encoding/json"
+	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/tnaucoin/gorabbit/internal/data"
 )
 
-type RabbitMQ struct {
+type RabbitClient struct {
 	Connection *amqp.Connection
 	Channel    *amqp.Channel
-	Queue      amqp.Queue
 }
 
-func NewRabbitMQ(qName string, durable bool) (*RabbitMQ, error) {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+// NewRabbitMQConnection creates a new RabbitMQ instance. It returns an error if any. It takes the following parameters:
+// username: The username of the RabbitMQ server
+// password: The password of the RabbitMQ server
+// host: The host of the RabbitMQ server
+// vhost: The virtual host of the RabbitMQ server
+// returns: A new *amqp.connection
+func NewRabbitMQConnection(username, password, host, vhost string) (*amqp.Connection, error) {
+	conn, err := amqp.Dial(fmt.Sprintf("amqp://%s:%s@%s/%s", username, password, host, vhost))
 	if err != nil {
 		return nil, err
 	}
+	return conn, nil
+}
+
+// NewRabbitMQClient creates a new RabbitMQ instance. It returns an error if any. It takes the following parameters:
+// conn: The connection to the RabbitMQ server
+// returns: A new RabbitMQ instance
+func NewRabbitMQClient(conn *amqp.Connection) (*RabbitClient, error) {
 	ch, err := conn.Channel()
 	if err != nil {
 		return nil, err
 	}
-
-	q, err := ch.QueueDeclare(
-		qName,
-		durable, //durable
-		false,   //delete when unused
-		false,   //exclusive
-		false,   //no-wait
-		nil,     //arguments
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &RabbitMQ{Connection: conn, Channel: ch, Queue: q}, nil
+	return &RabbitClient{
+		Connection: conn,
+		Channel:    ch,
+	}, nil
 }
 
-// PublishJSON publishes a message to the queue
-func (rmq *RabbitMQ) PublishJSON(ctx context.Context, data data.MyData) error {
-	jsonData, err := json.Marshal(data)
+// QueueDeclare declares a queue to hold messages and deliver to consumers.
+func (rmq *RabbitClient) QueueDeclare(name string, durable, autoDelete bool) error {
+	_, err := rmq.Channel.QueueDeclare(
+		name,
+		durable,
+		autoDelete,
+		false,
+		false,
+		nil,
+	)
 	if err != nil {
 		return err
 	}
-	err = rmq.Channel.PublishWithContext(ctx, "", rmq.Queue.Name, false, false, amqp.Publishing{
-		ContentType: "application/json",
-		Body:        jsonData,
-	})
-	return err
+	return nil
 }
 
-func (rmq *RabbitMQ) PublishString(ctx context.Context, data []byte) error {
-	err := rmq.Channel.PublishWithContext(ctx, "", rmq.Queue.Name, false, false, amqp.Publishing{
-		DeliveryMode: amqp.Persistent,
-		ContentType:  "text/plain",
-		Body:         []byte(data),
-	})
-	return err
+// CreateBinding creates a binding between a queue and an exchange.
+func (rc *RabbitClient) CreateBinding(name, binding, exchange string) error {
+	return rc.Channel.QueueBind(name, binding, exchange, false, nil)
 }
 
-func (rmq *RabbitMQ) Consume() (<-chan amqp.Delivery, error) {
-	return rmq.Channel.Consume(rmq.Queue.Name, "", false, false, false, false, nil)
+// Send sends a message to the queue
+func (rc *RabbitClient) Send(ctx context.Context, exchange, routingKey string, options amqp.Publishing) error {
+	// Set manditory to true to return message if no queue is bound to the exchange
+	return rc.Channel.PublishWithContext(ctx, exchange, routingKey, true, false, options)
 }
 
-func (rmq *RabbitMQ) Close() {
+func (rmq *RabbitClient) Close() {
 	_ = rmq.Channel.Close()
-	_ = rmq.Connection.Close()
 }
